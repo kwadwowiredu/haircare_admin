@@ -76,6 +76,7 @@ const Dashboard = ({ orders, products, setShowSalesHistory, salesHistory, clearS
           </div>
           <div className="orders-table-two">
             <h3>Low Stock Alerts</h3>
+
             {lowStockProducts.length > 0 ? (
               lowStockProducts.map((product, index) => (
                 <p key={index} className="low-stock">{product.name} - Only {product.stock} items left</p>

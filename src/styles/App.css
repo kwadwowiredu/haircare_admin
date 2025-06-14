@@ -103,11 +103,12 @@ body {
 .sidebar h2 {
   color: #6a0dad;
   font-size: 1.2rem;
-  margin-bottom: 30px;
+  margin-bottom: 50px;
 }
 
 .sidebar ul {
   list-style: none;
+  font-weight: 600;
 }
 
 .sidebar li {
@@ -136,7 +137,7 @@ body {
   position: absolute;
   margin-left: 10px;
   cursor: pointer;
-  bottom: 300px;
+  top: 600px;
   display: flex;
   align-items: center;
   color: #1a1a1a;
@@ -154,7 +155,7 @@ body {
 
 .dashboard h2, .orders h2, .inventory h2 {
   font-size: 22px;
-  color: #1a1a1a;
+  color: #1f1f1f;
 }
 
 .dashboard p, .orders p, .inventory p {
@@ -171,17 +172,17 @@ body {
 
 .stat-card {
   background-color: #fff;
-  padding: 20px;
-  border-radius: 10px;
+  padding: 20px 20px 0 20px;
+  border-radius: 6px;
   flex: 1;
   text-align: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
   min-width: 0;
 }
 
 .stat-display {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 15px;
 }
@@ -219,26 +220,30 @@ body {
 }
 
 .stat-card .p-one {
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 22px;
+  font-weight: 600;
+  text-align: left;
   color: green;
 }
 
 .stat-card .p-two {
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 22px;
+  font-weight: 600;
+  text-align: left;
   color: #824fa7;
 }
 
 .stat-card .p-three {
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 22px;
+  font-weight: 600;
+  text-align: left;
   color: rgb(236, 156, 5);
 }
 
 .stat-card .p-four {
-  font-size: 20px;
-  font-weight: 500;
+  font-size: 22px;
+  font-weight: 600;
+  text-align: left;
   color: blue;
 }
 
@@ -248,16 +253,11 @@ body {
   color: #757575;
 }
 
-.stat-card p {
-  color: #1a1a1a;
-  margin-top: 5px;
-}
-
 .orders-table, .inventory-table {
   background-color: #fff;
   border-radius: 10px;
+  border: 1px solid #dadada;
   padding: 20px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
 }
 
 .orders-table table, .inventory-table table {
@@ -271,12 +271,37 @@ body {
   border-bottom: 1px solid #ddd;
 }
 
+.dashboard-table-content {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.dashboard-table-content h3{
+  font-size: 18px;
+  color: #444444;
+  font-weight: 500;
+}
+
+.orders-table-one table th{
+  font-weight: 700;
+  color: #999999;
+}
+
 .orders-table-one {
+  flex-basis: 50%;
+  background-color: #fff;
+  border: 1px solid #dadada;
+  border-radius: 10px;
+  padding: 20px 15px;
+}
+
+.orders-table-two {
+  flex-basis: 50%;
+  border: 1px solid #dadada;
   background-color: #fff;
   border-radius: 10px;
-  margin-bottom: 15px;
-  padding: 20px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+  padding: 20px 15px;
 }
 
 .orders-table-one table {
@@ -286,6 +311,7 @@ body {
 
 .orders-table-one th, .orders-table-one td, .inventory-table th, .inventory-table td {
   padding: 10px;
+  font-size: 14px;
   text-align: left;
   border-bottom: 1px solid #ddd;
 }
@@ -293,17 +319,6 @@ body {
 .orders-table-one th, .inventory-table th {
   color: #666;
   font-weight: normal;
-}
-
-.dashboard-table-content {
-  width: 100%;
-}
-
-.orders-table-two {
-  background-color: #fff;
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
 }
 
 .low-stock {
@@ -348,6 +363,23 @@ body {
 
 .action-buttons button.delete {
   color: #dc3545;
+}
+
+.desktop-table tr th{
+  font-size: 14px;
+  font-weight: 500;
+  color: #525252;
+}
+
+.desktop-table tbody{
+  font-size: 14px;
+  font-weight: 500;
+  color: #727272;
+}
+
+.desktop-table tbody tr td:nth-of-type(2){
+  font-weight: 600;
+  color: #272727;
 }
 
 /* Inventory Component Styles */
@@ -790,11 +822,16 @@ body {
     left: 0;
   }
 
+  .sidebar h2 {
+    margin-top: 20px;
+  }
+
   .hamburger-menu {
     display: block;
     position: absolute;
-    top: 3px;
-    left: 10px;
+    font-size: 25px;
+    top: 10px;
+    left: 20px;
   }
 
   .dashboard, .orders, .inventory {
@@ -844,6 +881,7 @@ body {
   }
   .search-filter button{
     font-size: 8px;
+    font: 14px;
     margin-left: 5px;
   }
   .inventory-grid .product-card{
