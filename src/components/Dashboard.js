@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const Dashboard = ({ orders, products, setShowSalesHistory, salesHistory, clearSalesHistoryForDay }) => {
   const totalSales = orders.reduce((sum, order) => sum + order.amount, 0).toFixed(2);
@@ -18,8 +18,8 @@ const Dashboard = ({ orders, products, setShowSalesHistory, salesHistory, clearS
             <h3>Total Sales</h3>
             <i className='material-icons display-1'>attach_money</i>
           </div>
-          <p className='p-one' onClick={() => setShowSalesHistory(true)} style={{ cursor: 'pointer' }}>
-            ${totalSales}
+          <p className='p-one'>
+            GHs {totalSales}
           </p>
         </div>
         <div className="stat-card">
@@ -60,10 +60,10 @@ const Dashboard = ({ orders, products, setShowSalesHistory, salesHistory, clearS
               </thead>
               <tbody>
                 {orders.map((order, index) => (
-                  <tr key={index}>
+                  <tr key={index} className={order.status === 'Delivered' ? 'delivered-order' : ''}>
                     <td>{order.customer}</td>
                     <td>{order.product}</td>
-                    <td>${order.amount}</td>
+                    <td>GHs {order.amount}</td>
                     <td>
                       <span className={`status-${order.status.toLowerCase()}`}>
                         {order.status}
@@ -76,10 +76,9 @@ const Dashboard = ({ orders, products, setShowSalesHistory, salesHistory, clearS
           </div>
           <div className="orders-table-two">
             <h3>Low Stock Alerts</h3>
-
             {lowStockProducts.length > 0 ? (
               lowStockProducts.map((product, index) => (
-                <p key={index} className="low-stock">{product.name} - Only {product.stock} items left</p>
+                <p key={index} className="low-stock"><i className="material-icons" style={{ color: 'red' }}>warning</i> {product.name} - Only {product.stock} items left</p>
               ))
             ) : (
               <p>No low stock alerts.</p>

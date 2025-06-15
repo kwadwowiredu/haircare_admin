@@ -47,7 +47,7 @@ const ProductForm = ({ product, onClose, onSubmit }) => {
         value={formData.name}
         onChange={handleChange}
       />
-      <label>Price ($)</label>
+      <label>Price (GHs)</label>
       <input
         type="text"
         name="price"

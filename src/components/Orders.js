@@ -55,12 +55,12 @@ const Orders = ({ orders, onAddOrder, onEditOrder, onDeleteOrder, onCancelOrder 
           </thead>
           <tbody>
             {filteredOrders.map((order) => (
-              <tr key={order.id}>
+              <tr key={order.id} className={order.status === 'Delivered' ? 'delivered-order' : ''}>
                 <td>{order.date}</td>
                 <td>{order.customer}<br/>{order.phone}</td>
                 <td>{order.product}</td>
                 <td>{order.quantity}</td>
-                <td>${order.amount}</td>
+                <td>GHs {order.amount}</td>
                 <td>{order.location}</td>
                 <td>
                   <span className={`status-${order.status.toLowerCase()}`}>
@@ -104,7 +104,7 @@ const Orders = ({ orders, onAddOrder, onEditOrder, onDeleteOrder, onCancelOrder 
                   <p><strong>Phone:</strong> {order.phone}</p>
                   <p><strong>Product:</strong> {order.product}</p>
                   <p><strong>Quantity:</strong> {order.quantity}</p>
-                  <p><strong>Amount:</strong> ${order.amount}</p>
+                  <p><strong>Amount:</strong> GHs {order.amount}</p>
                   <p><strong>Location:</strong> {order.location}</p>
                   <p><strong>Status:</strong> <span className={`status-${order.status.toLowerCase()}`}>{order.status}</span></p>
                   <div className="order-card-actions">

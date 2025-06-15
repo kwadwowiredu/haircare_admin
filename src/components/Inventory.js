@@ -25,7 +25,7 @@ const Inventory = ({ products, setProducts, onAddProduct, onEditProduct, onDelet
           <div key={product.id} className="product-card">
             <div className="product-header">
               <strong>{product.name}</strong>
-              <span className="product-price">${product.price}</span>
+              <span className="product-price">GHs {product.price}</span>
             </div>
             <div className="stock-control">
               Stock: {product.stock}

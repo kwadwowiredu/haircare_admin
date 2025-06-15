@@ -26,6 +26,13 @@ const Sidebar = ({ currentPage, setCurrentPage, onLogout, isOpen, toggleSidebar 
           <span className="material-icons">inventory</span>
           Inventory
         </li>
+        <li
+          className={currentPage === 'History' ? 'active' : ''}
+          onClick={() => { setCurrentPage('History'); if (isOpen) toggleSidebar(); }}
+        >
+          <span className="material-icons">history</span>
+          History
+        </li>
       </ul>
       <div className="logout" onClick={() => { onLogout(); if (isOpen) toggleSidebar(); }}>
         <span className="material-icons">logout</span>

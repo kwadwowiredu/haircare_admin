@@ -25,8 +25,9 @@ const OrderForm = ({ order, products, onClose, onSubmit }) => {
         status: order.status,
       });
     } else {
+      const currentDate = new Date().toLocaleDateString('en-GB');
       setFormData({
-        date: '05/23/2025', // Updated to current date
+        date: currentDate,
         customer: '',
         phone: '',
         product: '',
@@ -37,6 +38,14 @@ const OrderForm = ({ order, products, onClose, onSubmit }) => {
       });
     }
   }, [order]);
+
+  useEffect(() => {
+    const product = products.find(p => p.name === formData.product);
+    if (product) {
+      const total = product.price * formData.quantity;
+      setFormData(prev => ({ ...prev, amount: total.toFixed(2) }));
+    }
+  }, [formData.product, formData.quantity, products]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -80,7 +89,7 @@ const OrderForm = ({ order, products, onClose, onSubmit }) => {
         <select name="product" value={formData.product} onChange={handleChange}>
           <option value="">Select a product</option>
           {products.map(product => (
-            <option key={product.id} value={product.name}>{product.name}</option>
+            <option key={product.id} value={product.name}>{product.name} (GHs {product.price})</option>
           ))}
         </select>
         <label>Quantity</label>
@@ -92,13 +101,14 @@ const OrderForm = ({ order, products, onClose, onSubmit }) => {
           onChange={handleChange}
           min="1"
         />
-        <label>Amount ($)</label>
+        <label>Amount (GHs)</label>
         <input
           type="text"
           name="amount"
           placeholder="Enter amount"
           value={formData.amount}
           onChange={handleChange}
+          readOnly
         />
         <label>Delivery Location</label>
         <input
@@ -116,9 +126,8 @@ const OrderForm = ({ order, products, onClose, onSubmit }) => {
         </select>
         <label>Date</label>
         <input
-          type="text"
+          type="date"
           name="date"
-          placeholder="Enter date"
           value={formData.date}
           onChange={handleChange}
         />

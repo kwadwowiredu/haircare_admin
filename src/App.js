@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -6,6 +6,7 @@ import Orders from './components/Orders';
 import Inventory from './components/Inventory';
 import OrderForm from './components/OrderForm';
 import ProductForm from './components/ProductForm';
+import History from './components/History';
 import './styles/App.css';
 
 function App() {
@@ -26,14 +27,7 @@ function App() {
   const [showSalesHistory, setShowSalesHistory] = useState(false);
 
   const [orders, setOrders] = useState([]);
-  const [products, setProducts] = useState([
-    { id: 1, name: 'Hydrating Shampoo', price: 25.99, stock: 45 },
-    { id: 2, name: 'Curl Defining Cream', price: 18.5, stock: 32 },
-    { id: 3, name: 'Anti-Frizz Serum', price: 32.99, stock: 28 },
-    { id: 4, name: 'Deep Conditioning Mask', price: 35.5, stock: 15 },
-    { id: 5, name: 'Scalp Treatment Oil', price: 45, stock: 12 },
-  ]);
-
+  const [products, setProducts] = useState([]); // Empty inventory on launch
   const [salesHistory, setSalesHistory] = useState([]); // Initialize as empty array
 
   const handleLogin = () => {
@@ -70,13 +64,9 @@ function App() {
     let shouldCheckStock = false;
 
     if (editOrder) {
-      // When editing, check stock only if quantity has increased
       const quantityDifference = newOrder.quantity - editOrder.quantity;
-      if (quantityDifference > 0) {
-        shouldCheckStock = true;
-      }
+      if (quantityDifference > 0) shouldCheckStock = true;
     } else {
-      // For new orders, always check stock
       shouldCheckStock = true;
     }
 
@@ -87,7 +77,6 @@ function App() {
 
     if (product) {
       if (editOrder) {
-        // Adjust stock based on quantity difference
         const quantityDifference = newOrder.quantity - editOrder.quantity;
         if (quantityDifference !== 0) {
           setProducts(products.map(p =>
@@ -101,7 +90,8 @@ function App() {
         ));
         const newOrderWithId = { ...newOrder, id: orders.length + 1 };
         setOrders([...orders, newOrderWithId]);
-        setSalesHistory([{ date: '06/02/2025', orders: [newOrderWithId] }]); // Add to sales history with current date
+        const currentDate = new Date().toLocaleDateString('en-GB');
+        setSalesHistory([{ date: currentDate, orders: [newOrderWithId] }, ...salesHistory]);
       }
     }
     setShowOrderForm(false);
@@ -168,6 +158,16 @@ function App() {
     setSalesHistory(salesHistory.filter(entry => entry.date !== date));
   };
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isSidebarOpen && !event.target.closest('.sidebar') && window.innerWidth <= 767) {
+        setIsSidebarOpen(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [isSidebarOpen]);
+
   if (!isLoggedIn) {
     return <Login onLogin={handleLogin} />;
   }
@@ -212,20 +212,33 @@ function App() {
             onDeleteProduct={(product) => confirmDelete(product, 'product')}
           />
         )}
-        {showOrderForm && (
-          <OrderForm
-            order={editOrder}
-            products={products}
-            onClose={() => setShowOrderForm(false)}
-            onSubmit={addOrder}
+        {currentPage === 'History' && (
+          <History
+            orders={orders}
+            salesHistory={salesHistory}
+            clearSalesHistoryForDay={clearSalesHistoryForDay}
           />
         )}
-        {showProductForm && (
-          <ProductForm
-            product={editProduct}
-            onClose={() => setShowProductForm(false)}
-            onSubmit={addProduct}
-          />
+        {(showOrderForm || showProductForm) && (
+          <div className="modal-overlay">
+            <div className="form-wrapper">
+              {showOrderForm && (
+                <OrderForm
+                  order={editOrder}
+                  products={products}
+                  onClose={() => setShowOrderForm(false)}
+                  onSubmit={addOrder}
+                />
+              )}
+              {showProductForm && (
+                <ProductForm
+                  product={editProduct}
+                  onClose={() => setShowProductForm(false)}
+                  onSubmit={addProduct}
+                />
+              )}
+            </div>
+          </div>
         )}
         {showDeleteConfirm && (
           <div className="delete-confirm">
@@ -299,7 +312,7 @@ function App() {
                             <td>{order.customer}</td>
                             <td>{order.product}</td>
                             <td>{order.quantity}</td>
-                            <td>${order.amount}</td>
+                            <td>GHs {order.amount}</td>
                             <td>{order.location}</td>
                             <td>
                               <span className={`status-${order.status.toLowerCase()}`}>
