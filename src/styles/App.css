@@ -771,44 +771,58 @@ body {
 }
 
 /********** RESPONSIVE DESIGN **********/
-@media (min-width: 768px) and (max-width: 1200px) {
-  /**** iPAD MINI & iPAD Air */
-  .sidebar .logout {
-    position: absolute;
-    bottom: 600px;
-  }
-  .dashboard, .orders, .inventory {
-    margin-left: 200px;
-  }
-  
- .stats {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, auto);
-    gap: 20px;
-  }
-
-  .stat-card {
-    flex: none;
-  }
-
-  .dashboard-table-content{
-    flex-direction: column;
-    gap: 15px;
+@media (max-width: 375px) {
+  /* Galaxy S8, galaxy note 3, s9, pixel 4, iphone SE) */
+  /* Dashboard */
+  .stat-card .p-one,
+  .stat-card .p-two,
+  .stat-card .p-three,
+  .stat-card .p-four{
+    font-weight: 400;
   }
   
+ .orders-table-one table th{
+    font-weight: 700;
+    color: #999999;
+    font-size: 13px;
+  }
 
-  .orders-table, .orders-table-one {
-    overflow-x: auto;
-    margin-bottom: 15px;
+  .sidebar .logout{
+    bottom: 0;
+  }
+
+
+  .orders-table-one table th:nth-last-of-type(2),
+  .orders-table-one table td:nth-last-of-type(2){
+    display: none;
+  }
+
+  .orders-table-one table td{
+    font-size: 14px;
+  }
+
+  .orders-table-two{
+    margin-top: -15px;
+  }
+  /* Add Order Card */
+  .form-container{
+    width: 310px;
   }
 }
+@media (min-width: 376px) and (max-width: 480px){
+  /* pixel 3, iphone x */
+    .stat-card .p-one,
+  .stat-card .p-two,
+  .stat-card .p-three,
+  .stat-card .p-four{
+    font-weight: 400;
+  }
 
-@media (min-width: 1024px) and (max-width: 1368px) {
-  /***** iPAD pro *****/
+  .orders-table-two {
+    margin-top: -15px;
+  }
   .sidebar .logout{
-    position: absolute;
-    bottom: 800px;
+    bottom: -14%;
   }
 }
 
@@ -865,12 +879,6 @@ body {
     flex-direction: column;
   }
 
-  .orders-table-one {
-    width: 100%;
-    font-size: 13px;
-    margin-bottom: 15px;
-  }
-
   .orders-table-two {
     width: 100%;
   }
@@ -889,7 +897,72 @@ body {
   }
 }
 
+@media (min-width: 768px) and (max-width: 1200px) {
+  /**** iPAD MINI & iPAD Air */
+    .stat-card .p-one,
+  .stat-card .p-two,
+  .stat-card .p-three,
+  .stat-card .p-four{
+    font-weight: 400;
+  }
+
+  .sidebar .logout {
+    position: absolute;
+    bottom: 600px;
+  }
+  .dashboard, .orders, .inventory {
+    margin-left: 200px;
+  }
+  
+ .stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, auto);
+    gap: 20px;
+  }
+
+  .stat-card {
+    flex: none;
+  }
+
+  .dashboard-table-content{
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+
+  .orders-table, .orders-table-one {
+    overflow-x: auto;
+    margin-bottom: 15px;
+  }
+
+  .sidebar .logout{
+    bottom: 0;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1368px) {
+  /***** iPAD pro *****/
+    .stat-card .p-one,
+  .stat-card .p-two,
+  .stat-card .p-three,
+  .stat-card .p-four{
+    font-weight: 400;
+  }
+
+  .sidebar .logout{
+    bottom: 0;
+  }
+}
+
 @media (min-width: 540px) and (max-width: 720px) {
+  .stat-card .p-one,
+  .stat-card .p-two,
+  .stat-card .p-three,
+  .stat-card .p-four{
+    font-weight: 400;
+  }
+
   .sidebar {
     left: 0;
   }
@@ -913,7 +986,13 @@ body {
 
   .stat-card {
     width: 100%;
-    padding: 5px;
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+.orders-table-one table th:nth-last-of-type(2),
+  .orders-table-one table td:nth-last-of-type(2){
+    display: none;
   }
 
   .orders-table, .orders-table-one {
