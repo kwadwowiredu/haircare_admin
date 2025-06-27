@@ -71,6 +71,7 @@ function App() {
     }
 
     if (shouldCheckStock && product && product.stock < newOrder.quantity) {
+      setShowOrderForm(false); // Close order form when out of stock
       setShowOutOfStockModal(true);
       return;
     }
@@ -83,15 +84,26 @@ function App() {
             p.name === newOrder.product ? { ...p, stock: p.stock - quantityDifference } : p
           ));
         }
-        setOrders(orders.map(order => order.id === editOrder.id ? { ...newOrder, id: order.id } : order));
+        const updatedOrder = { ...newOrder, id: editOrder.id, timestamp: new Date().toLocaleString('en-GB') };
+        setOrders(orders.map(order => order.id === editOrder.id ? updatedOrder : order));
+        updateSalesHistory(updatedOrder, editOrder);
       } else {
         setProducts(products.map(p =>
           p.name === newOrder.product ? { ...p, stock: p.stock - newOrder.quantity } : p
         ));
-        const newOrderWithId = { ...newOrder, id: orders.length + 1 };
+        const newOrderWithId = { ...newOrder, id: orders.length + 1, timestamp: new Date().toLocaleString('en-GB') };
         setOrders([...orders, newOrderWithId]);
-        const currentDate = new Date().toLocaleDateString('en-GB');
-        setSalesHistory([{ date: currentDate, orders: [newOrderWithId] }, ...salesHistory]);
+        const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+        setSalesHistory(prevHistory => {
+          const existingMonth = prevHistory.find(entry => entry.month === currentMonth);
+          if (existingMonth) {
+            return prevHistory.map(entry =>
+              entry.month === currentMonth ? { ...entry, orders: [...entry.orders, newOrderWithId], actions: [...entry.actions, { type: 'created', orderId: newOrderWithId.id, timestamp: newOrderWithId.timestamp }] } : entry
+            );
+          } else {
+            return [{ month: currentMonth, orders: [newOrderWithId], actions: [{ type: 'created', orderId: newOrderWithId.id, timestamp: newOrderWithId.timestamp }] }, ...prevHistory];
+          }
+        });
       }
     }
     setShowOrderForm(false);
@@ -123,7 +135,16 @@ function App() {
 
   const handleDelete = () => {
     if (deleteType === 'order') {
+      const deletedOrder = orders.find(order => order.id === deleteItem.id);
       setOrders(orders.filter(order => order.id !== deleteItem.id));
+      const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+      setSalesHistory(prevHistory => prevHistory.map(entry =>
+        entry.month === currentMonth ? {
+          ...entry,
+          orders: entry.orders.filter(order => order.id !== deletedOrder.id),
+          actions: [...entry.actions, { type: 'deleted', orderId: deletedOrder.id, timestamp: new Date().toLocaleString('en-GB') }]
+        } : entry
+      ).filter(entry => entry.orders.length > 0 || entry.actions.length > 0));
     } else if (deleteType === 'product') {
       setProducts(products.filter(product => product.id !== deleteItem.id));
     }
@@ -146,21 +167,60 @@ function App() {
         p.name === canceledOrder.product ? { ...p, stock: p.stock + canceledOrder.quantity } : p
       ));
     }
+    const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+    setSalesHistory(prevHistory => prevHistory.map(entry =>
+      entry.month === currentMonth ? {
+        ...entry,
+        orders: entry.orders.filter(order => order.id !== canceledOrder.id),
+        actions: [...entry.actions, { type: 'canceled', orderId: canceledOrder.id, timestamp: new Date().toLocaleString('en-GB') }]
+      } : entry
+    ).filter(entry => entry.orders.length > 0 || entry.actions.length > 0));
     setShowCancelConfirm(false);
     setCancelOrder(null);
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+  const updateSalesHistory = (newOrder, oldOrder = null) => {
+    const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+    setSalesHistory(prevHistory => {
+      const existingMonth = prevHistory.find(entry => entry.month === currentMonth);
+      if (existingMonth) {
+        if (oldOrder) {
+          const updatedOrders = existingMonth.orders.map(order => order.id === oldOrder.id ? newOrder : order);
+          const action = { type: 'status_changed', orderId: newOrder.id, from: oldOrder.status, to: newOrder.status, timestamp: new Date().toLocaleString('en-GB') };
+          return prevHistory.map(entry =>
+            entry.month === currentMonth ? { ...entry, orders: updatedOrders, actions: [...entry.actions, action] } : entry
+          );
+        } else {
+          return prevHistory; // Creation handled in addOrder
+        }
+      } else {
+        return prevHistory; // Creation handled in addOrder
+      }
+    });
   };
 
-  const clearSalesHistoryForDay = (date) => {
-    setSalesHistory(salesHistory.filter(entry => entry.date !== date));
+  const updateSalesHistoryOnDelete = (deletedOrder) => {
+    const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+    setSalesHistory(prevHistory => prevHistory.map(entry =>
+      entry.month === currentMonth ? {
+        ...entry,
+        orders: entry.orders.filter(order => order.id !== deletedOrder.id),
+        actions: [...entry.actions, { type: 'deleted', orderId: deletedOrder.id, timestamp: new Date().toLocaleString('en-GB') }]
+      } : entry
+    ).filter(entry => entry.orders.length > 0 || entry.actions.length > 0));
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(prev => !prev);
+  };
+
+  const clearSalesHistoryForMonth = (month) => {
+    setSalesHistory(salesHistory.filter(entry => entry.month !== month));
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isSidebarOpen && !event.target.closest('.sidebar') && window.innerWidth <= 767) {
+      if (isSidebarOpen && !event.target.closest('.sidebar') && !event.target.closest('.hamburger-menu') && window.innerWidth <= 767) {
         setIsSidebarOpen(false);
       }
     };
@@ -191,12 +251,13 @@ function App() {
             products={products}
             setShowSalesHistory={setShowSalesHistory}
             salesHistory={salesHistory}
-            clearSalesHistoryForDay={clearSalesHistoryForDay}
+            clearSalesHistoryForMonth={clearSalesHistoryForMonth}
           />
         )}
         {currentPage === 'Orders' && (
           <Orders
             orders={orders}
+            setOrders={setOrders}
             onAddOrder={handleAddOrder}
             onEditOrder={handleEditOrder}
             onDeleteOrder={(order) => confirmDelete(order, 'order')}
@@ -216,7 +277,7 @@ function App() {
           <History
             orders={orders}
             salesHistory={salesHistory}
-            clearSalesHistoryForDay={clearSalesHistoryForDay}
+            clearSalesHistoryForMonth={clearSalesHistoryForMonth}
           />
         )}
         {(showOrderForm || showProductForm) && (
@@ -265,7 +326,7 @@ function App() {
           </div>
         )}
         {showOutOfStockModal && (
-          <div className="delete-confirm">
+          <div className="delete-confirm out-of-stock-modal">
             <div className="delete-confirm-content">
               <h3>Out of Stock</h3>
               <p>The selected product is out of stock. Please refill the stock.</p>
@@ -291,10 +352,10 @@ function App() {
             <div className="sales-history-content">
               <button className="close-button" onClick={() => setShowSalesHistory(false)}>x</button>
               <h3>Sales History</h3>
-              {salesHistory.map((day, index) => (
+              {salesHistory.map((month, index) => (
                 <div key={index} className="sales-day">
-                  <h4>{day.date}</h4>
-                  {day.orders.length > 0 ? (
+                  <h4>{month.month}</h4>
+                  {month.orders.length > 0 ? (
                     <table className="sales-table">
                       <thead>
                         <tr>
@@ -307,7 +368,7 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {day.orders.map((order, idx) => (
+                        {month.orders.map((order, idx) => (
                           <tr key={idx}>
                             <td>{order.customer}</td>
                             <td>{order.product}</td>
@@ -324,13 +385,13 @@ function App() {
                       </tbody>
                     </table>
                   ) : (
-                    <p>No orders for this day.</p>
+                    <p>No orders for this month.</p>
                   )}
                   <button
                     className="clear-history"
-                    onClick={() => clearSalesHistoryForDay(day.date)}
+                    onClick={() => clearSalesHistoryForMonth(month.month)}
                   >
-                    Clear History
+                    Clear History for {month.month}
                   </button>
                 </div>
               ))}

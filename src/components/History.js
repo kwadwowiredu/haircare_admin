@@ -1,81 +1,114 @@
 import React, { useState } from 'react';
 
-const History = ({ orders, salesHistory, clearSalesHistoryForDay }) => {
-  const [timeFilter, setTimeFilter] = useState('day');
-  const currentDate = new Date().toLocaleDateString('en-GB');
-  const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-  const currentYear = new Date().getFullYear();
-
-  const filteredHistory = salesHistory.filter(entry => {
-    const entryDate = new Date(entry.date);
-    if (timeFilter === 'day') return entry.date === currentDate;
-    if (timeFilter === 'month') return entryDate.getMonth() === new Date().getMonth() && entryDate.getFullYear() === new Date().getFullYear();
-    if (timeFilter === 'year') return entryDate.getFullYear() === currentYear;
-    return true;
+const History = ({ orders, salesHistory, clearSalesHistoryForMonth }) => {
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }));
+  const [expandedOrderId, setExpandedOrderId] = useState(null); // Add state for expanded order
+  const availableMonths = [...new Set(salesHistory.map(entry => entry.month))].sort((a, b) => {
+    const [aMonth, aYear] = a.split(' ');
+    const [bMonth, bYear] = b.split(' ');
+    return new Date(bYear, getMonthNumber(bMonth)) - new Date(aYear, getMonthNumber(aMonth));
   });
 
-  const totalSales = filteredHistory.reduce((sum, entry) => sum + entry.orders.reduce((acc, order) => acc + order.amount, 0), 0).toFixed(2);
-  const totalOrders = filteredHistory.reduce((sum, entry) => sum + entry.orders.length, 0);
-  const completedOrders = filteredHistory.reduce((sum, entry) => sum + entry.orders.filter(order => order.status === 'Delivered').length, 0);
-  const pendingOrders = filteredHistory.reduce((sum, entry) => sum + entry.orders.filter(order => order.status === 'Pending').length, 0);
+  function getMonthNumber(monthName) {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return months.indexOf(monthName);
+  }
+
+  const filteredHistory = salesHistory.find(entry => entry.month === selectedMonth) || { month: selectedMonth, orders: [], actions: [] };
+
+  const totalSales = filteredHistory.orders.reduce((sum, order) => sum + (order.amount || 0), 0).toFixed(2);
+  const totalOrders = filteredHistory.orders.length;
+  const completedOrders = filteredHistory.orders.filter(order => order.status === 'Delivered').length;
+  const canceledOrders = filteredHistory.actions.filter(action => action.type === 'canceled').length;
+
+  const toggleExpandOrder = (orderId) => {
+    setExpandedOrderId(expandedOrderId === orderId ? null : orderId); // Toggle expansion
+  };
 
   return (
     <div className="history">
       <h2>Sales History</h2>
-      <div className="history-filter">
-        <select value={timeFilter} onChange={(e) => setTimeFilter(e.target.value)} style={{ padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }}>
-          <option value="day">Today</option>
-          <option value="month">This Month</option>
-          <option value="year">This Year</option>
+      <div className="month-selector">
+        <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
+          {availableMonths.length > 0 ? (
+            availableMonths.map((month) => (
+              <option key={month} value={month}>{month}</option>
+            ))
+          ) : (
+            <option value={selectedMonth}>{selectedMonth}</option>
+          )}
         </select>
       </div>
-      <div className="history-stats">
+      <div className="stats">
         <div className="stat-card">
-          <h3>Total Sales</h3>
-          <p>GHs {totalSales}</p>
+          <div className="stat-display">
+            <h3>Total Sales</h3>
+            <i className="material-icons display-1">attach_money</i>
+          </div>
+          <p className="p-one">GHs {totalSales}</p>
         </div>
         <div className="stat-card">
-          <h3>Total Orders</h3>
-          <p>{totalOrders}</p>
+          <div className="stat-display">
+            <h3>Total Orders</h3>
+            <i className="material-icons display-2">shopping_cart</i>
+          </div>
+          <p className="p-two">{totalOrders}</p>
         </div>
         <div className="stat-card">
-          <h3>Completed Orders</h3>
-          <p>{completedOrders}</p>
+          <div className="stat-display">
+            <h3>Completed Orders</h3>
+            <i className="material-icons display-4">task_alt</i>
+          </div>
+          <p className="p-four">{completedOrders}</p>
         </div>
         <div className="stat-card">
-          <h3>Pending Orders</h3>
-          <p>{pendingOrders}</p>
+          <div className="stat-display">
+            <h3>Canceled Orders</h3>
+            <i className="material-icons display-3">cancel</i>
+          </div>
+          <p className="p-three">{canceledOrders}</p>
         </div>
       </div>
-      <div className="history-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Customer</th>
-              <th>Product</th>
-              <th>Amount</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredHistory.flatMap(entry =>
-              entry.orders.map((order, idx) => (
-                <tr key={`${entry.date}-${idx}`}>
-                  <td>{entry.date}</td>
-                  <td>{order.customer}</td>
-                  <td>{order.product}</td>
-                  <td>GHs {order.amount}</td>
-                  <td>
-                    <span className={`status-${order.status.toLowerCase()}`}>
-                      {order.status}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      <div className="orders-table">
+        {filteredHistory.orders.length > 0 ? (
+          filteredHistory.orders.map((order) => (
+            <div
+              key={order.id}
+              className={`order-card ${expandedOrderId === order.id ? 'expanded' : ''} ${order.status === 'Delivered' ? 'delivered-order' : ''}`}
+              onClick={() => toggleExpandOrder(order.id)}
+            >
+              <div className="order-card-header">
+                <div className="order-card-info">
+                  <h4>{order.customer}</h4>
+                  <p>{order.product}</p>
+                  <p>{order.location}</p>
+                </div>
+                <span className={`status-button status-${order.status.toLowerCase()}`}>
+                  {order.status}
+                </span>
+              </div>
+              {expandedOrderId === order.id && (
+                <div className="order-card-details">
+                  <p><strong>Date:</strong> {order.timestamp ? order.timestamp.split(',')[0] : 'N/A'}</p>
+                  <p><strong>Customer:</strong> {order.customer}</p>
+                  <p><strong>Product:</strong> {order.product}</p>
+                  <p><strong>Quantity:</strong> {order.quantity}</p>
+                  <p><strong>Amount:</strong> GHs {order.amount}</p>
+                  <p><strong>Location:</strong> {order.location}</p>
+                  <p><strong>Status:</strong> <span className={`status-${order.status.toLowerCase()}`}>{order.status}</span></p>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <p className="no-sales-notice">No sales yet for {selectedMonth}.</p>
+        )}
+        <button
+          className="clear-history"
+          onClick={() => clearSalesHistoryForMonth(selectedMonth)}
+        >
+          Clear History for {selectedMonth}
+        </button>
       </div>
     </div>
   );

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 
-const Orders = ({ orders, onAddOrder, onEditOrder, onDeleteOrder, onCancelOrder }) => {
+const Orders = ({ orders, setOrders, onAddOrder, onEditOrder, onDeleteOrder, onCancelOrder }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(null);
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = (
@@ -18,6 +19,17 @@ const Orders = ({ orders, onAddOrder, onEditOrder, onDeleteOrder, onCancelOrder 
 
   const toggleExpandOrder = (orderId) => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
+  };
+
+  const toggleStatusDropdown = (orderId) => {
+    setShowStatusDropdown(showStatusDropdown === orderId ? null : orderId);
+  };
+
+  const updateOrderStatus = (orderId, newStatus) => {
+    setOrders(orders.map(order =>
+      order.id === orderId ? { ...order, status: newStatus } : order
+    ));
+    setShowStatusDropdown(null);
   };
 
   return (
@@ -63,9 +75,19 @@ const Orders = ({ orders, onAddOrder, onEditOrder, onDeleteOrder, onCancelOrder 
                 <td>GHs {order.amount}</td>
                 <td>{order.location}</td>
                 <td>
-                  <span className={`status-${order.status.toLowerCase()}`}>
+                  <button
+                    className={`status-button status-${order.status.toLowerCase()}`}
+                    onClick={() => toggleStatusDropdown(order.id)}
+                  >
                     {order.status}
-                  </span>
+                  </button>
+                  {showStatusDropdown === order.id && (
+                    <div className="status-dropdown">
+                      <button onClick={() => updateOrderStatus(order.id, 'New')}>New</button>
+                      <button onClick={() => updateOrderStatus(order.id, 'Pending')}>Pending</button>
+                      <button onClick={() => updateOrderStatus(order.id, 'Delivered')}>Delivered</button>
+                    </div>
+                  )}
                 </td>
                 <td className="action-buttons">
                   <button onClick={() => onEditOrder(order)}>Edit</button>
@@ -84,7 +106,7 @@ const Orders = ({ orders, onAddOrder, onEditOrder, onDeleteOrder, onCancelOrder 
           {filteredOrders.map((order) => (
             <div
               key={order.id}
-              className={`order-card ${expandedOrderId === order.id ? 'expanded' : ''}`}
+              className={`order-card ${expandedOrderId === order.id ? 'expanded' : ''} ${order.status === 'Delivered' ? 'delivered-order' : ''}`}
               onClick={() => toggleExpandOrder(order.id)}
             >
               <div className="order-card-header">
@@ -93,9 +115,19 @@ const Orders = ({ orders, onAddOrder, onEditOrder, onDeleteOrder, onCancelOrder 
                   <p>{order.product}</p>
                   <p>{order.location}</p>
                 </div>
-                <span className={`status-${order.status.toLowerCase()}`}>
+                <button
+                  className={`status-button status-${order.status.toLowerCase()}`}
+                  onClick={(e) => { e.stopPropagation(); toggleStatusDropdown(order.id); }}
+                >
                   {order.status}
-                </span>
+                </button>
+                {showStatusDropdown === order.id && (
+                  <div className="status-dropdown">
+                    <button onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'New'); }}>New</button>
+                    <button onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'Pending'); }}>Pending</button>
+                    <button onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, 'Delivered'); }}>Delivered</button>
+                  </div>
+                )}
               </div>
               {expandedOrderId === order.id && (
                 <div className="order-card-details">
