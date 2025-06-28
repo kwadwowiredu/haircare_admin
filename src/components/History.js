@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 const History = ({ orders, salesHistory, clearSalesHistoryForMonth }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }));
-  const [expandedOrderId, setExpandedOrderId] = useState(null); // Add state for expanded order
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
   const availableMonths = [...new Set(salesHistory.map(entry => entry.month))].sort((a, b) => {
     const [aMonth, aYear] = a.split(' ');
     const [bMonth, bYear] = b.split(' ');
@@ -17,12 +17,14 @@ const History = ({ orders, salesHistory, clearSalesHistoryForMonth }) => {
   const filteredHistory = salesHistory.find(entry => entry.month === selectedMonth) || { month: selectedMonth, orders: [], actions: [] };
 
   const totalSales = filteredHistory.orders.reduce((sum, order) => sum + (order.amount || 0), 0).toFixed(2);
-  const totalOrders = filteredHistory.orders.length;
+  const allOrderIds = [...new Set(salesHistory.flatMap(entry => entry.orders.map(o => o.id)))];
+  const cancelledOrderIds = [...new Set(salesHistory.flatMap(entry => entry.actions.filter(a => a.type === 'canceled').map(a => a.orderId)))];
+  const totalOrders = allOrderIds.filter(id => !cancelledOrderIds.includes(id)).length;
   const completedOrders = filteredHistory.orders.filter(order => order.status === 'Delivered').length;
   const canceledOrders = filteredHistory.actions.filter(action => action.type === 'canceled').length;
 
   const toggleExpandOrder = (orderId) => {
-    setExpandedOrderId(expandedOrderId === orderId ? null : orderId); // Toggle expansion
+    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
 
   return (
@@ -74,7 +76,7 @@ const History = ({ orders, salesHistory, clearSalesHistoryForMonth }) => {
           filteredHistory.orders.map((order) => (
             <div
               key={order.id}
-              className={`order-card ${expandedOrderId === order.id ? 'expanded' : ''} ${order.status === 'Delivered' ? 'delivered-order' : ''}`}
+              className={`order-card ${expandedOrderId === order.id ? 'expanded' : ''} ${order.status === 'Delivered' ? 'delivered-order' : ''} ${order.status === 'Cancelled' ? 'cancelled-order' : ''}`}
               onClick={() => toggleExpandOrder(order.id)}
             >
               <div className="order-card-header">

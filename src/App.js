@@ -25,6 +25,8 @@ function App() {
   const [deleteType, setDeleteType] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showSalesHistory, setShowSalesHistory] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [monthToClear, setMonthToClear] = useState('');
 
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]); // Empty inventory on launch
@@ -71,7 +73,7 @@ function App() {
     }
 
     if (shouldCheckStock && product && product.stock < newOrder.quantity) {
-      setShowOrderForm(false); // Close order form when out of stock
+      setShowOrderForm(false);
       setShowOutOfStockModal(true);
       return;
     }
@@ -138,13 +140,16 @@ function App() {
       const deletedOrder = orders.find(order => order.id === deleteItem.id);
       setOrders(orders.filter(order => order.id !== deleteItem.id));
       const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-      setSalesHistory(prevHistory => prevHistory.map(entry =>
-        entry.month === currentMonth ? {
-          ...entry,
-          orders: entry.orders.filter(order => order.id !== deletedOrder.id),
-          actions: [...entry.actions, { type: 'deleted', orderId: deletedOrder.id, timestamp: new Date().toLocaleString('en-GB') }]
-        } : entry
-      ).filter(entry => entry.orders.length > 0 || entry.actions.length > 0));
+      setSalesHistory(prevHistory => {
+        const existingMonth = prevHistory.find(entry => entry.month === currentMonth);
+        if (existingMonth) {
+          return prevHistory.map(entry =>
+            entry.month === currentMonth ? { ...entry, orders: [...entry.orders, { ...deletedOrder, status: 'Deleted' }], actions: [...entry.actions, { type: 'deleted', orderId: deletedOrder.id, timestamp: new Date().toLocaleString('en-GB') }] } : entry
+          );
+        } else {
+          return [{ month: currentMonth, orders: [{ ...deletedOrder, status: 'Deleted' }], actions: [{ type: 'deleted', orderId: deletedOrder.id, timestamp: new Date().toLocaleString('en-GB') }] }, ...prevHistory];
+        }
+      });
     } else if (deleteType === 'product') {
       setProducts(products.filter(product => product.id !== deleteItem.id));
     }
@@ -168,13 +173,16 @@ function App() {
       ));
     }
     const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-    setSalesHistory(prevHistory => prevHistory.map(entry =>
-      entry.month === currentMonth ? {
-        ...entry,
-        orders: entry.orders.filter(order => order.id !== canceledOrder.id),
-        actions: [...entry.actions, { type: 'canceled', orderId: canceledOrder.id, timestamp: new Date().toLocaleString('en-GB') }]
-      } : entry
-    ).filter(entry => entry.orders.length > 0 || entry.actions.length > 0));
+    setSalesHistory(prevHistory => {
+      const existingMonth = prevHistory.find(entry => entry.month === currentMonth);
+      if (existingMonth) {
+        return prevHistory.map(entry =>
+          entry.month === currentMonth ? { ...entry, orders: [...entry.orders, { ...canceledOrder, status: 'Cancelled' }], actions: [...entry.actions, { type: 'canceled', orderId: canceledOrder.id, timestamp: new Date().toLocaleString('en-GB') }] } : entry
+        );
+      } else {
+        return [{ month: currentMonth, orders: [{ ...canceledOrder, status: 'Cancelled' }], actions: [{ type: 'canceled', orderId: canceledOrder.id, timestamp: new Date().toLocaleString('en-GB') }] }, ...prevHistory];
+      }
+    });
     setShowCancelConfirm(false);
     setCancelOrder(null);
   };
@@ -191,10 +199,10 @@ function App() {
             entry.month === currentMonth ? { ...entry, orders: updatedOrders, actions: [...entry.actions, action] } : entry
           );
         } else {
-          return prevHistory; // Creation handled in addOrder
+          return prevHistory;
         }
       } else {
-        return prevHistory; // Creation handled in addOrder
+        return prevHistory;
       }
     });
   };
@@ -204,7 +212,7 @@ function App() {
     setSalesHistory(prevHistory => prevHistory.map(entry =>
       entry.month === currentMonth ? {
         ...entry,
-        orders: entry.orders.filter(order => order.id !== deletedOrder.id),
+        orders: [...entry.orders, { ...deletedOrder, status: 'Deleted' }],
         actions: [...entry.actions, { type: 'deleted', orderId: deletedOrder.id, timestamp: new Date().toLocaleString('en-GB') }]
       } : entry
     ).filter(entry => entry.orders.length > 0 || entry.actions.length > 0));
@@ -215,7 +223,19 @@ function App() {
   };
 
   const clearSalesHistoryForMonth = (month) => {
-    setSalesHistory(salesHistory.filter(entry => entry.month !== month));
+    setMonthToClear(month);
+    setShowClearConfirm(true);
+  };
+
+  const confirmClearHistory = () => {
+    setSalesHistory(salesHistory.filter(entry => entry.month !== monthToClear));
+    setShowClearConfirm(false);
+    setMonthToClear('');
+  };
+
+  const cancelClearHistory = () => {
+    setShowClearConfirm(false);
+    setMonthToClear('');
   };
 
   useEffect(() => {
@@ -376,7 +396,7 @@ function App() {
                             <td>GHs {order.amount}</td>
                             <td>{order.location}</td>
                             <td>
-                              <span className={`status-${order.status.toLowerCase()}`}>
+                              <span className={`status-button status-${order.status.toLowerCase()}`}>
                                 {order.status}
                               </span>
                             </td>
@@ -385,7 +405,7 @@ function App() {
                       </tbody>
                     </table>
                   ) : (
-                    <p>No orders for this month.</p>
+                    <p className="no-sales-notice">No sales yet for {month.month}.</p>
                   )}
                   <button
                     className="clear-history"
@@ -395,6 +415,18 @@ function App() {
                   </button>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+        {showClearConfirm && (
+          <div className="delete-confirm clear-confirm-modal">
+            <div className="delete-confirm-content">
+              <h3>Confirm Clear History</h3>
+              <p>Are you sure you want to clear the history for {monthToClear}? This action cannot be undone.</p>
+              <div className="delete-confirm-buttons">
+                <button className="cancel" onClick={cancelClearHistory}>Cancel</button>
+                <button className="delete" onClick={confirmClearHistory}>Clear</button>
+              </div>
             </div>
           </div>
         )}
