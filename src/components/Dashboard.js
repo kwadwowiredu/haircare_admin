@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
-const Dashboard = ({ orders, products, setShowSalesHistory, salesHistory, clearSalesHistoryForDay }) => {
-  const totalSales = orders.reduce((sum, order) => sum + order.amount, 0).toFixed(2);
+const Dashboard = ({ orders, products, setShowSalesHistory, salesHistory, clearSalesHistoryForMonth, totalSalesHistory }) => {
+  const totalSales = totalSalesHistory; // Reflects all orders immediately
   const totalOrders = orders.length;
   const pendingOrders = orders.filter(order => order.status === 'Pending').length;
   const completedOrders = orders.filter(order => order.status === 'Delivered').length;
@@ -19,7 +19,7 @@ const Dashboard = ({ orders, products, setShowSalesHistory, salesHistory, clearS
             <i className='material-icons display-1'>attach_money</i>
           </div>
           <p className='p-one'>
-            GHs {totalSales}
+            GHs {totalSales.toFixed(2)}
           </p>
         </div>
         <div className="stat-card">
@@ -59,7 +59,7 @@ const Dashboard = ({ orders, products, setShowSalesHistory, salesHistory, clearS
                 </tr>
               </thead>
               <tbody>
-                {orders.map((order, index) => (
+                {orders.slice(-5).map((order, index) => (
                   <tr key={index} className={order.status === 'Delivered' ? 'delivered-order' : ''}>
                     <td>{order.customer}</td>
                     <td>{order.product}</td>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const History = ({ orders, salesHistory, clearSalesHistoryForMonth }) => {
+const History = ({ orders, salesHistory, clearSalesHistoryForMonth, totalSalesHistory, confirmDelete }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toLocaleString('default', { month: 'long', year: 'numeric' }));
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const availableMonths = [...new Set(salesHistory.map(entry => entry.month))].sort((a, b) => {
@@ -16,15 +16,15 @@ const History = ({ orders, salesHistory, clearSalesHistoryForMonth }) => {
 
   const filteredHistory = salesHistory.find(entry => entry.month === selectedMonth) || { month: selectedMonth, orders: [], actions: [] };
 
-  const totalSales = filteredHistory.orders.reduce((sum, order) => sum + (order.amount || 0), 0).toFixed(2);
-  const allOrderIds = [...new Set(salesHistory.flatMap(entry => entry.orders.map(o => o.id)))];
-  const cancelledOrderIds = [...new Set(salesHistory.flatMap(entry => entry.actions.filter(a => a.type === 'canceled').map(a => a.orderId)))];
-  const totalOrders = allOrderIds.filter(id => !cancelledOrderIds.includes(id)).length;
+  // Calculate total sales for History (only delivered orders)
+  const totalSales = filteredHistory.orders.filter(order => order.status === 'Delivered').reduce((sum, order) => sum + (order.amount || 0), 0);
   const completedOrders = filteredHistory.orders.filter(order => order.status === 'Delivered').length;
   const canceledOrders = filteredHistory.actions.filter(action => action.type === 'canceled').length;
+  const totalOrders = completedOrders + canceledOrders; // Sum of completed and cancelled
 
-  const toggleExpandOrder = (orderId) => {
-    setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
+  const toggleExpandOrder = (orderId, e) => {
+    e.stopPropagation(); // Prevent event bubbling
+    setExpandedOrderId(prev => (prev === orderId ? null : orderId)); // Toggle only the clicked card
   };
 
   return (
@@ -47,7 +47,7 @@ const History = ({ orders, salesHistory, clearSalesHistoryForMonth }) => {
             <h3>Total Sales</h3>
             <i className="material-icons display-1">attach_money</i>
           </div>
-          <p className="p-one">GHs {totalSales}</p>
+          <p className="p-one">GHs {totalSales.toFixed(2)}</p>
         </div>
         <div className="stat-card">
           <div className="stat-display">
@@ -73,11 +73,11 @@ const History = ({ orders, salesHistory, clearSalesHistoryForMonth }) => {
       </div>
       <div className="orders-table">
         {filteredHistory.orders.length > 0 ? (
-          filteredHistory.orders.map((order) => (
+          filteredHistory.orders.filter(order => order.status === 'Delivered' || order.status === 'Cancelled').map((order) => (
             <div
               key={order.id}
               className={`order-card ${expandedOrderId === order.id ? 'expanded' : ''} ${order.status === 'Delivered' ? 'delivered-order' : ''} ${order.status === 'Cancelled' ? 'cancelled-order' : ''}`}
-              onClick={() => toggleExpandOrder(order.id)}
+              onClick={(e) => toggleExpandOrder(order.id, e)}
             >
               <div className="order-card-header">
                 <div className="order-card-info">
@@ -85,9 +85,11 @@ const History = ({ orders, salesHistory, clearSalesHistoryForMonth }) => {
                   <p>{order.product}</p>
                   <p>{order.location}</p>
                 </div>
-                <span className={`status-button status-${order.status.toLowerCase()}`}>
-                  {order.status}
-                </span>
+                <div className="status-actions">
+                  <span className={`status-button status-${order.status.toLowerCase()}`} onClick={(e) => e.stopPropagation()}>
+                    {order.status}
+                  </span>
+                </div>
               </div>
               {expandedOrderId === order.id && (
                 <div className="order-card-details">
@@ -95,7 +97,7 @@ const History = ({ orders, salesHistory, clearSalesHistoryForMonth }) => {
                   <p><strong>Customer:</strong> {order.customer}</p>
                   <p><strong>Product:</strong> {order.product}</p>
                   <p><strong>Quantity:</strong> {order.quantity}</p>
-                  <p><strong>Amount:</strong> GHs {order.amount}</p>
+                  <p><strong>Amount:</strong> GHs {order.amount || 0}</p> {/* Display original amount for all statuses */}
                   <p><strong>Location:</strong> {order.location}</p>
                   <p><strong>Status:</strong> <span className={`status-${order.status.toLowerCase()}`}>{order.status}</span></p>
                 </div>

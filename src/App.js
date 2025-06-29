@@ -31,6 +31,8 @@ function App() {
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]); // Empty inventory on launch
   const [salesHistory, setSalesHistory] = useState([]); // Initialize as empty array
+  const [totalSalesDashboard, setTotalSalesDashboard] = useState(0); // Track sales for Dashboard
+  const [totalSalesHistory, setTotalSalesHistory] = useState(0); // Track sales for History
 
   const handleLogin = () => {
     setIsLoggedIn(true);
@@ -88,24 +90,14 @@ function App() {
         }
         const updatedOrder = { ...newOrder, id: editOrder.id, timestamp: new Date().toLocaleString('en-GB') };
         setOrders(orders.map(order => order.id === editOrder.id ? updatedOrder : order));
-        updateSalesHistory(updatedOrder, editOrder);
+        updateSales(updatedOrder, editOrder);
       } else {
         setProducts(products.map(p =>
           p.name === newOrder.product ? { ...p, stock: p.stock - newOrder.quantity } : p
         ));
         const newOrderWithId = { ...newOrder, id: orders.length + 1, timestamp: new Date().toLocaleString('en-GB') };
         setOrders([...orders, newOrderWithId]);
-        const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-        setSalesHistory(prevHistory => {
-          const existingMonth = prevHistory.find(entry => entry.month === currentMonth);
-          if (existingMonth) {
-            return prevHistory.map(entry =>
-              entry.month === currentMonth ? { ...entry, orders: [...entry.orders, newOrderWithId], actions: [...entry.actions, { type: 'created', orderId: newOrderWithId.id, timestamp: newOrderWithId.timestamp }] } : entry
-            );
-          } else {
-            return [{ month: currentMonth, orders: [newOrderWithId], actions: [{ type: 'created', orderId: newOrderWithId.id, timestamp: newOrderWithId.timestamp }] }, ...prevHistory];
-          }
-        });
+        setTotalSalesDashboard(prev => prev + (newOrderWithId.amount || 0)); // Add to Dashboard sales immediately
       }
     }
     setShowOrderForm(false);
@@ -144,12 +136,16 @@ function App() {
         const existingMonth = prevHistory.find(entry => entry.month === currentMonth);
         if (existingMonth) {
           return prevHistory.map(entry =>
-            entry.month === currentMonth ? { ...entry, orders: [...entry.orders, { ...deletedOrder, status: 'Deleted' }], actions: [...entry.actions, { type: 'deleted', orderId: deletedOrder.id, timestamp: new Date().toLocaleString('en-GB') }] } : entry
+            entry.month === currentMonth ? { ...entry, orders: [...entry.orders, { ...deletedOrder, status: 'Delivered', amount: deletedOrder.amount }], actions: [...entry.actions, { type: 'completed', orderId: deletedOrder.id, timestamp: new Date().toLocaleString('en-GB') }] } : entry
           );
         } else {
-          return [{ month: currentMonth, orders: [{ ...deletedOrder, status: 'Deleted' }], actions: [{ type: 'deleted', orderId: deletedOrder.id, timestamp: new Date().toLocaleString('en-GB') }] }, ...prevHistory];
+          return [{ month: currentMonth, orders: [{ ...deletedOrder, status: 'Delivered', amount: deletedOrder.amount }], actions: [{ type: 'completed', orderId: deletedOrder.id, timestamp: new Date().toLocaleString('en-GB') }] }, ...prevHistory];
         }
       });
+      // Only revert from Dashboard if not delivered, retain if delivered
+      if (deletedOrder.status !== 'Delivered') {
+        setTotalSalesDashboard(prev => prev - (deletedOrder.amount || 0));
+      }
     } else if (deleteType === 'product') {
       setProducts(products.filter(product => product.id !== deleteItem.id));
     }
@@ -172,38 +168,54 @@ function App() {
         p.name === canceledOrder.product ? { ...p, stock: p.stock + canceledOrder.quantity } : p
       ));
     }
+    setTotalSalesDashboard(prev => prev - (canceledOrder.amount || 0)); // Revert from Dashboard sales
     const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
     setSalesHistory(prevHistory => {
       const existingMonth = prevHistory.find(entry => entry.month === currentMonth);
       if (existingMonth) {
         return prevHistory.map(entry =>
-          entry.month === currentMonth ? { ...entry, orders: [...entry.orders, { ...canceledOrder, status: 'Cancelled' }], actions: [...entry.actions, { type: 'canceled', orderId: canceledOrder.id, timestamp: new Date().toLocaleString('en-GB') }] } : entry
+          entry.month === currentMonth ? { ...entry, orders: [...entry.orders, { ...canceledOrder, status: 'Cancelled', amount: canceledOrder.amount }], actions: [...entry.actions, { type: 'canceled', orderId: canceledOrder.id, timestamp: new Date().toLocaleString('en-GB') }] } : entry
         );
       } else {
-        return [{ month: currentMonth, orders: [{ ...canceledOrder, status: 'Cancelled' }], actions: [{ type: 'canceled', orderId: canceledOrder.id, timestamp: new Date().toLocaleString('en-GB') }] }, ...prevHistory];
+        return [{ month: currentMonth, orders: [{ ...canceledOrder, status: 'Cancelled', amount: canceledOrder.amount }], actions: [{ type: 'canceled', orderId: canceledOrder.id, timestamp: new Date().toLocaleString('en-GB') }] }, ...prevHistory];
       }
     });
     setShowCancelConfirm(false);
     setCancelOrder(null);
   };
 
-  const updateSalesHistory = (newOrder, oldOrder = null) => {
+  const updateSales = (newOrder, oldOrder = null) => {
     const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
     setSalesHistory(prevHistory => {
       const existingMonth = prevHistory.find(entry => entry.month === currentMonth);
       if (existingMonth) {
-        if (oldOrder) {
-          const updatedOrders = existingMonth.orders.map(order => order.id === oldOrder.id ? newOrder : order);
-          const action = { type: 'status_changed', orderId: newOrder.id, from: oldOrder.status, to: newOrder.status, timestamp: new Date().toLocaleString('en-GB') };
-          return prevHistory.map(entry =>
-            entry.month === currentMonth ? { ...entry, orders: updatedOrders, actions: [...entry.actions, action] } : entry
-          );
-        } else {
-          return prevHistory;
+        if (oldOrder && oldOrder.status !== newOrder.status) {
+          if (newOrder.status === 'Delivered') {
+            setTotalSalesHistory(prev => prev + (newOrder.amount || 0)); // Add to History sales on delivery
+            setTotalSalesDashboard(prev => prev + (newOrder.amount || 0) - (oldOrder.amount || 0)); // Adjust Dashboard if changed
+            return prevHistory.map(entry =>
+              entry.month === currentMonth ? { ...entry, orders: [...entry.orders, { ...newOrder, amount: newOrder.amount }], actions: [...entry.actions, { type: 'completed', orderId: newOrder.id, timestamp: new Date().toLocaleString('en-GB') }] } : entry
+            );
+          } else if (oldOrder.status === 'Delivered' && newOrder.status !== 'Delivered') {
+            setTotalSalesHistory(prev => prev - (oldOrder.amount || 0)); // Subtract from History if reverted
+            setTotalSalesDashboard(prev => prev - (oldOrder.amount || 0)); // Subtract from Dashboard if reverted
+            setSalesHistory(prev => prev.map(entry =>
+              entry.month === currentMonth ? { ...entry, orders: entry.orders.filter(o => o.id !== newOrder.id) } : entry
+            ));
+            return prevHistory; // Removed from history
+          } else if (newOrder.status === 'Cancelled') {
+            return prevHistory.map(entry =>
+              entry.month === currentMonth ? { ...entry, orders: [...entry.orders, { ...newOrder, amount: newOrder.amount }], actions: [...entry.actions, { type: 'canceled', orderId: newOrder.id, timestamp: new Date().toLocaleString('en-GB') }] } : entry
+            );
+          }
         }
-      } else {
-        return prevHistory;
+      } else if (newOrder.status === 'Delivered') {
+        setTotalSalesHistory(prev => prev + (newOrder.amount || 0)); // Add to History sales on delivery
+        return [{ month: currentMonth, orders: [{ ...newOrder, amount: newOrder.amount }], actions: [{ type: 'completed', orderId: newOrder.id, timestamp: new Date().toLocaleString('en-GB') }] }, ...prevHistory];
+      } else if (newOrder.status === 'Cancelled') {
+        return [{ month: currentMonth, orders: [{ ...newOrder, amount: newOrder.amount }], actions: [{ type: 'canceled', orderId: newOrder.id, timestamp: new Date().toLocaleString('en-GB') }] }, ...prevHistory];
       }
+      return prevHistory;
     });
   };
 
@@ -212,8 +224,8 @@ function App() {
     setSalesHistory(prevHistory => prevHistory.map(entry =>
       entry.month === currentMonth ? {
         ...entry,
-        orders: [...entry.orders, { ...deletedOrder, status: 'Deleted' }],
-        actions: [...entry.actions, { type: 'deleted', orderId: deletedOrder.id, timestamp: new Date().toLocaleString('en-GB') }]
+        orders: [...entry.orders, { ...deletedOrder, status: 'Delivered', amount: deletedOrder.amount }],
+        actions: [...entry.actions, { type: 'completed', orderId: deletedOrder.id, timestamp: new Date().toLocaleString('en-GB') }]
       } : entry
     ).filter(entry => entry.orders.length > 0 || entry.actions.length > 0));
   };
@@ -267,11 +279,12 @@ function App() {
       <div className={`main-content ${isSidebarOpen ? 'sidebar-open' : ''}`}>
         {currentPage === 'Dashboard' && (
           <Dashboard
-            orders={orders.slice(-5)}
+            orders={orders}
             products={products}
             setShowSalesHistory={setShowSalesHistory}
             salesHistory={salesHistory}
             clearSalesHistoryForMonth={clearSalesHistoryForMonth}
+            totalSalesHistory={totalSalesDashboard} // Use Dashboard-specific total
           />
         )}
         {currentPage === 'Orders' && (
@@ -282,6 +295,7 @@ function App() {
             onEditOrder={handleEditOrder}
             onDeleteOrder={(order) => confirmDelete(order, 'order')}
             onCancelOrder={confirmCancel}
+            isDeleteVisible={(order) => order.status === 'Delivered'} // Hide trash icon until delivered
           />
         )}
         {currentPage === 'Inventory' && (
@@ -298,6 +312,8 @@ function App() {
             orders={orders}
             salesHistory={salesHistory}
             clearSalesHistoryForMonth={clearSalesHistoryForMonth}
+            totalSalesHistory={totalSalesHistory} // Use History-specific total
+            confirmDelete={confirmDelete}
           />
         )}
         {(showOrderForm || showProductForm) && (

@@ -654,12 +654,12 @@ body {
 
 .order-card.delivered-order {
   opacity: 0.7;
-  background-color: #f0f0f0;
+  background-color: #d4f7e3; /* Light green highlighter */
 }
 
 .order-card.cancelled-order {
   opacity: 0.7;
-  background-color: #f8d7da;
+  background-color: #f8d7da; /* Light red highlighter */
 }
 
 .order-card-header {
@@ -719,6 +719,34 @@ body {
 
 .order-card-actions button.cancel {
   color: #dc3545;
+}
+
+/* Status and Delete Icon Styling */
+.status-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-button {
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.delete-icon {
+  cursor: pointer;
+  font-size: 18px;
+  color: #ff4444;
+}
+
+.delete-icon:hover {
+  color: #cc0000;
+}
+
+.delivered-order {
+  background-color: #d4f7e3; /* Light green highlighter */
+  opacity: 0.7;
 }
 
 /* Desktop Table for Orders */
@@ -1078,7 +1106,7 @@ body {
 
   .order-card.delivered-order {
     opacity: 0.7;
-    background-color: #f0f0f0;
+    background-color: #d4f7e3;
   }
 
   .stats {
@@ -1101,6 +1129,40 @@ body {
     width: 100%;
   }
 
+  .status-dropdown {
+    position: absolute;
+    top: 100%; /* Position directly beneath the status button */
+    left: 0; /* Align with the left edge of the button */
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    margin-top: 5px; /* Small gap below button */
+    width: auto; /* Adjust width to content */
+    min-width: 100px; /* Minimum width for readability */
+    display: none;
+  }
+
+  .status-button:hover .status-dropdown,
+  .status-button:focus-within .status-dropdown {
+    display: block; /* Show dropdown on hover or focus */
+  }
+
+  .status-dropdown button {
+    display: block;
+    width: 100%;
+    padding: 5px 10px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .status-dropdown button:hover {
+    background-color: #f0f0f0;
+  }
+
   .search-filter {
     font-size: 18px;
     padding: 5px;
@@ -1120,7 +1182,7 @@ body {
 
   .history .stat-card {
     width: 100%;
-    margin-bottom: 15px;
+    margin-bottom: 0;
   }
 
   .history .order-card {
@@ -1278,5 +1340,5 @@ body {
 
 /* New Clear Confirmation Modal Style */
 .clear-confirm-modal {
-  z-index: 1002; /* Above other modals */
+  z-index: 1002;
 }
